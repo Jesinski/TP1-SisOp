@@ -1,8 +1,10 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from dataclasses import dataclass
 from random import seed
 from random import randint
+from data import *
 seed(1)
 
 tempoGlobal = 0  # tempo total de simulação
@@ -16,6 +18,9 @@ processador = []
 class PCB:
     nome: str
     arrival: int
+    variaveis: dict
+    sequencia_comandos: list[CodeLine]
+    program: str
     pc: int = 0
     acc: float = 0.0
     estado: str = "admissao"
@@ -26,23 +31,29 @@ class PCB:
     quantum: int = 0
     quantumAcc: int =  0
     tempo_bloqueado: int = 0
-
-atual = PCB("placeholder", 1000)    
-atual.estado = "running"
-atual.prioridade = 500
-atual.quantum = 100
-atual.quantumAcc = 100
-
+    
 ##################################################################################################################################
 
-escolha = int(input("Digite '1' para usar o escalonador de Prioridade com Preempção, ou '2' para usar o escalonador de Round Robin com quantum definível: \n"))   
+escolha = int(input("Digite '1' para usar o escalonador de Prioridade com Preempção, ou '2' para usar o escalonador de Round Robin com quantum definível: \n"))
 n_processos = int(input("Digite o número de processos que deseja carregar: \n"))  
-jogar_fora = True
 
 for i in range(n_processos):
-    name = input("Digite o nome do processo {}: \n".format(i+1) )
+# Procurar pelo nome do programa
+    validPCB = False
+    program: list
+    while not validPCB:
+        name = input("Digite o nome do processo (arquivo + extensão) {}: \n".format(i+1) )
+        try:
+            program = open("./programs/"+name, "r").readlines()
+            validPCB = True
+            break
+        except:
+            print("Nome de arquivo inválido.\nO arquivo deverá estar na pasta \"./programs\"\n")
+    
     chegada = int(input("Digite o instante de tempo em que o processo entra no sistema (sai da fila de admissao para a fila de prontos): \n"))
-    p = PCB(name, chegada)
+    dicionario_variaveis = getVariableDictionary(program)
+    comandos = getCodeCommandsList(program)
+    p = PCB(name, chegada, dicionario_variaveis, comandos, program)
 
     if escolha == 1:
         prio = int(input("Digite o nível de prioridade deste processo, entre 0, 1 e 2. O padrão é baixa (2). \n"))
@@ -59,7 +70,7 @@ for processo in admissao:
 ##################################################################################################################################
 
 def escalonadorPrioridade(): 
-    global prontos, atual, jogar_fora, processador
+    global prontos, processador
 
     prontos.sort(key=lambda x: x.prioridade, reverse=False)
 
@@ -74,7 +85,7 @@ def escalonadorPrioridade():
             
 
 def  escalonadorRoundRobin():
-    global prontos, atual, jogar_fora, processador
+    global prontos, processador
 
     if processador[0].quantumAcc >= processador[0].quantum:
         if prontos != []:
@@ -89,7 +100,7 @@ def  escalonadorRoundRobin():
  ##################################################################################################################################     
      
 def syscall(sys):
-    global atual, jogar_fora, finalizados, bloqueados, prontos, n_processos, processador
+    global finalizados, bloqueados, prontos, n_processos, processador
 
     if sys == 0:
         processador[0].estado = "finalizado"
@@ -112,8 +123,8 @@ def syscall(sys):
  ##################################################################################################################################  
 
 def executa():
-    global atual
-
+    #consome a linha
+    
     processador[0].pc = processador[0].pc + 1     
     processador[0].processing_time = processador[0].processing_time + 1
     if escolha == 2: processador[0].quantumAcc = processador[0].quantumAcc + 1
