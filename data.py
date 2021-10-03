@@ -4,6 +4,8 @@
 from dataclasses import dataclass
 
 # Lookups to identify the code and data section
+
+
 class Lookups:
     code = ".code\n"
     endcode = ".endcode\n"
@@ -13,7 +15,7 @@ class Lookups:
 
 @dataclass
 class CodeLine:
-    index: int 
+    index: int
     command: str
     value: str
     isImmediate: bool
@@ -30,20 +32,27 @@ def getCodeCommandsList(program):
 
     codeIndex = getLineIndexOfLookup(program, Lookups.code)
     endcodeIndex = getLineIndexOfLookup(program, Lookups.endcode)
-    codeSection = program[codeIndex+1:endcodeIndex]
+    codeSection: list[str] = program[codeIndex+1:endcodeIndex]
 
     currentIndex = 0
     for pos in range(len(codeSection)):
         codeSection[pos] = codeSection[pos].lstrip()
         codeSection[pos] = codeSection[pos].rstrip()
         lineArr = codeSection[pos].split(" ")
-        isImmediate = True if lineArr[1].find("#") != -1 else False
-        codeList.append(CodeLine(currentIndex, lineArr[0], lineArr[1], isImmediate))
+        if (len(lineArr) < 2):
+            codeList.append(
+                CodeLine(currentIndex, lineArr[0], currentIndex, False))
+        else:
+            isImmediate = True if lineArr[1].find("#") != -1 else False
+            codeList.append(
+                CodeLine(currentIndex, lineArr[0], lineArr[1], isImmediate))
         currentIndex = currentIndex + 1
-    
+
     return codeList
 
 # Get the program's data section, extract all key and value pairs representing variable names and values then return as a dictionary
+
+
 def getVariableDictionary(program):
     dataIndex = getLineIndexOfLookup(program, Lookups.data)
     enddataIndex = getLineIndexOfLookup(program, Lookups.enddata)
@@ -58,10 +67,12 @@ def getVariableDictionary(program):
     return variables
 
 # debug
+
+
 def main():
 
     # for sourceCodePath in ["./programs/prog1.txt", "./programs/prog2.txt", "./programs/prog3.txt"]:
-    for sourceCodePath in ["./programs/prog1.txt"]:
+    for sourceCodePath in ["./programs/prog1.txt", "./programs/prog2.txt", "./programs/prog3.txt"]:
         program = open(sourceCodePath, "r").readlines()
 
         # dataMemory = getVariableDictionary(program)
@@ -69,6 +80,7 @@ def main():
 
         codeLines = getCodeCommandsList(program)
         print(codeLines)
+
 
 if __name__ == "__main__":
     main()
